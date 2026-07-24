@@ -11,6 +11,9 @@ BuildRequires:  golang >= 1.16
 BuildRequires:  systemd
 Requires:       systemd
 
+# Define %%{_unitdir} fallback if systemd-rpm-macros is missing
+%{!?_unitdir: %global _unitdir /usr/lib/systemd/system}
+
 # Disable debuginfo package generation since Go binaries don't require standard C debug symbols
 %global debug_package %{nil}
 

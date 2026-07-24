@@ -75,6 +75,7 @@ jobs:
                    --define "__version ${VERSION}" \
                    --define "__release 1" \
                    --define "_topdir $HOME/rpmbuild" \
+                   --define "_unitdir /usr/lib/systemd/system" \
                    -ba packaging/rpm/redborder-hub.spec
 
       - name: Build Redborder Satellite RPM
@@ -84,6 +85,7 @@ jobs:
                    --define "__version ${VERSION}" \
                    --define "__release 1" \
                    --define "_topdir $HOME/rpmbuild" \
+                   --define "_unitdir /usr/lib/systemd/system" \
                    -ba packaging/rpm/redborder-satellite.spec
 
       - name: Organize RPM Packages

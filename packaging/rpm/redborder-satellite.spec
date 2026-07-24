@@ -13,6 +13,9 @@ Requires:       systemd
 Requires:       net-snmp-utils
 Requires:       traceroute
 
+# Define %%{_unitdir} fallback if systemd-rpm-macros is missing
+%{!?_unitdir: %global _unitdir /usr/lib/systemd/system}
+
 # Disable debuginfo package generation since Go binaries don't require standard C debug symbols
 %global debug_package %{nil}
 
