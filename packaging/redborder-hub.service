@@ -1,0 +1,14 @@
+[Unit]
+Description=Redborder Observability Platform Hub
+After=network.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/redborder-hub -config /etc/redborder-hub/hub.json
+Restart=always
+RestartSec=5
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

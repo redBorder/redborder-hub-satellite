@@ -1,0 +1,6 @@
+{
+  "hub_url": "wss://redborder-hub.internal/ws",
+  "auth_token": "your-secure-registration-token",
+  "private_key_path": "redborder-satellite.key",
+  "agent_id": "remote-edge-satellite-01"
+}

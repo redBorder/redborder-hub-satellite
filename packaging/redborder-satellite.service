@@ -1,0 +1,14 @@
+[Unit]
+Description=Redborder Satellite Observability Spoke Agent
+After=network.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/redborder-satellite -config /etc/redborder-satellite/satellite.json
+Restart=always
+RestartSec=5
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
