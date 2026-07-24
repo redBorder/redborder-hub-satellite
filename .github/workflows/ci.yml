@@ -71,7 +71,8 @@ jobs:
       - name: Build Redborder Hub RPM
         run: |
           VERSION="${{ steps.get_version.outputs.VERSION }}"
-          rpmbuild --define "__version ${VERSION}" \
+          rpmbuild --nodeps \
+                   --define "__version ${VERSION}" \
                    --define "__release 1" \
                    --define "_topdir $HOME/rpmbuild" \
                    -ba packaging/rpm/redborder-hub.spec
@@ -79,7 +80,8 @@ jobs:
       - name: Build Redborder Satellite RPM
         run: |
           VERSION="${{ steps.get_version.outputs.VERSION }}"
-          rpmbuild --define "__version ${VERSION}" \
+          rpmbuild --nodeps \
+                   --define "__version ${VERSION}" \
                    --define "__release 1" \
                    --define "_topdir $HOME/rpmbuild" \
                    -ba packaging/rpm/redborder-satellite.spec
