@@ -58,5 +58,5 @@ install -p -m 0644 packaging/redborder-satellite.service %{buildroot}%{_unitdir}
 %{_unitdir}/redborder-satellite.service
 
 %changelog
-* Fri Jul 17 2026 Redborder Maintainers - 1.0.0-1
+* Fri Jul 17 2026 David Vanhoucke <dvanhoucke@redborder.com> - 1.0.0-1
 - Initial RPM release of redborder-satellite.
