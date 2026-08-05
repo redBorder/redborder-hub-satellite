@@ -42,6 +42,13 @@ install -p -m 0755 bin/redborder-satellite %{buildroot}%{_bindir}/redborder-sate
 install -p -m 0640 packaging/satellite.json.example %{buildroot}%{_sysconfdir}/%{name}/satellite.json
 install -p -m 0644 packaging/redborder-satellite.service %{buildroot}%{_unitdir}/redborder-satellite.service
 
+%pre
+getent group %{name} >/dev/null || groupadd -r %{name}
+getent passwd %{name} >/dev/null || \
+    useradd -r -g %{name} -d / -s /sbin/nologin \
+    -c "User of %{name} service" %{name}
+exit 0
+
 %post
 %systemd_post redborder-satellite.service
 
