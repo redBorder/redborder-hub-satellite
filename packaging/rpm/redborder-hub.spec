@@ -40,6 +40,13 @@ install -p -m 0755 bin/redborder-hub %{buildroot}%{_bindir}/redborder-hub
 install -p -m 0640 packaging/hub.json.example %{buildroot}%{_sysconfdir}/%{name}/hub.json
 install -p -m 0644 packaging/redborder-hub.service %{buildroot}%{_unitdir}/redborder-hub.service
 
+%pre
+getent group %{name} >/dev/null || groupadd -r %{name}
+getent passwd %{name} >/dev/null || \
+    useradd -r -g %{name} -d / -s /sbin/nologin \
+    -c "User of %{name} service" %{name}
+exit 0
+
 %post
 %systemd_post redborder-hub.service
 
