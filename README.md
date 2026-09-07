@@ -1,6 +1,6 @@
 # Redborder Observability Platform (Hub & Satellite)
 
-This repository provides a standard, secure, production-grade Go implementation of a decentralized Hub-and-Spoke Agent model designed for remote network observability. It leverages outbound WebSocket connections to bypass remote NAT and firewall constraints, dispatching predefined monitoring tasks (e.g. Ping and SNMPWalk) using JSON-RPC 2.0 payloads.
+This repository provides a standard, secure, production-grade Go implementation of a decentralized Hub-and-Spoke Agent model designed for remote network observability. It leverages outbound WebSocket connections to bypass remote NAT and firewall constraints, dispatching predefined monitoring tasks (e.g. Ping and SNMPWalk) using JSON-RPC 2.0 payloads
 
 ---
 
