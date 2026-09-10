@@ -306,3 +306,91 @@ func TestTracerouteParamsValidate(t *testing.T) {
 		})
 	}
 }
+
+func TestVMwareDiscoverParamsValidate(t *testing.T) {
+	tests := []struct {
+		name    string
+		params  VMwareDiscoverParams
+		wantErr bool
+	}{
+		{
+			name: "Valid IP and credentials",
+			params: VMwareDiscoverParams{
+				Host:     "192.168.1.50",
+				Username: "root",
+				Password: "secretpassword",
+				Timeout:  30,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Valid Hostname with port",
+			params: VMwareDiscoverParams{
+				Host:     "esxi.local:443",
+				Username: "admin",
+				Password: "password",
+				Timeout:  60,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Empty Host",
+			params: VMwareDiscoverParams{
+				Host:     "",
+				Username: "root",
+				Password: "password",
+				Timeout:  30,
+			},
+			wantErr: true,
+		},
+		{
+			name: "Unsafe Host injection",
+			params: VMwareDiscoverParams{
+				Host:     "192.168.1.50; rm -rf /",
+				Username: "root",
+				Password: "password",
+				Timeout:  30,
+			},
+			wantErr: true,
+		},
+		{
+			name: "Empty Username",
+			params: VMwareDiscoverParams{
+				Host:     "192.168.1.50",
+				Username: "",
+				Password: "password",
+				Timeout:  30,
+			},
+			wantErr: true,
+		},
+		{
+			name: "Empty Password",
+			params: VMwareDiscoverParams{
+				Host:     "192.168.1.50",
+				Username: "root",
+				Password: "",
+				Timeout:  30,
+			},
+			wantErr: true,
+		},
+		{
+			name: "Timeout too high",
+			params: VMwareDiscoverParams{
+				Host:     "192.168.1.50",
+				Username: "root",
+				Password: "password",
+				Timeout:  500,
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.params.Validate()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("VMwareDiscoverParams.Validate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}

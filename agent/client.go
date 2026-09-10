@@ -385,6 +385,8 @@ func (a *Agent) handleRequest(message []byte, session *agentSession) {
 		result, runErr = executeSNMPGet(a.ctx, req.Params)
 	case "traceroute":
 		result, runErr = executeTraceroute(a.ctx, req.Params)
+	case "vmware_discover_vms", "vmware_list_vms", "discover_vmware_vms":
+		result, runErr = executeVMwareDiscover(a.ctx, req.Params)
 	default:
 		a.mu.Lock()
 		cmdCfg, exists := a.customCommands[req.Method]
@@ -804,6 +806,8 @@ func (a *Agent) runScheduledTask(t common.ScheduledTask) {
 		result, err = executeSNMPGet(a.ctx, t.Params)
 	case "traceroute":
 		result, err = executeTraceroute(a.ctx, t.Params)
+	case "vmware_discover_vms", "vmware_list_vms", "discover_vmware_vms":
+		result, err = executeVMwareDiscover(a.ctx, t.Params)
 	default:
 		a.mu.Lock()
 		cmdCfg, exists := a.customCommands[t.Method]
@@ -1094,4 +1098,142 @@ func executeCustomBinary(ctx context.Context, methodName string, cmdCfg CustomCo
 		"stdout":      outStr,
 		"stderr":      errStr,
 	}, nil
+}
+
+func executeVMwareDiscover(ctx context.Context, rawParams json.RawMessage) (interface{}, error) {
+	var params common.VMwareDiscoverParams
+	if err := json.Unmarshal(rawParams, &params); err != nil {
+		return nil, fmt.Errorf("failed to parse params: %w", err)
+	}
+
+	if err := params.Validate(); err != nil {
+		return nil, fmt.Errorf("validation failed: %w", err)
+	}
+
+	result, err := runVMwareDiscoverCommand(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("vmware discovery execution failed: %w", err)
+	}
+	return result, nil
+}
+
+func runVMwareDiscoverCommand(ctx context.Context, params common.VMwareDiscoverParams) (*common.VMwareDiscoverResult, error) {
+	govcPath, err := exec.LookPath("govc")
+	if err != nil {
+		govcPath = "/usr/bin/govc"
+		if _, statErr := os.Stat(govcPath); statErr != nil {
+			return nil, errors.New("govc command not found in PATH or /usr/bin/govc")
+		}
+	}
+
+	tmpHome, err := os.MkdirTemp("", fmt.Sprintf("govc-satellite-%d-*", os.Getuid()))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create temporary govc home: %w", err)
+	}
+	defer os.RemoveAll(tmpHome)
+
+	env := append(os.Environ(),
+		fmt.Sprintf("GOVC_URL=https://%s/sdk", params.Host),
+		fmt.Sprintf("GOVC_USERNAME=%s", params.Username),
+		fmt.Sprintf("GOVC_PASSWORD=%s", params.Password),
+		"GOVC_INSECURE=true",
+		"GOVC_PERSIST_SESSION=false",
+		fmt.Sprintf("GOVC_HOME=%s", tmpHome),
+		fmt.Sprintf("HOME=%s", tmpHome),
+	)
+
+	timeoutCtx, cancel := context.WithTimeout(ctx, time.Duration(params.Timeout)*time.Second)
+	defer cancel()
+
+	// 1. Discover all VM inventory paths: govc find . -type m
+	findCmd := exec.CommandContext(timeoutCtx, govcPath, "find", ".", "-type", "m")
+	findCmd.Env = env
+	findOut, findErr := findCmd.CombinedOutput()
+	if findErr != nil {
+		return nil, fmt.Errorf("govc find failed (%v): %s", findErr, strings.TrimSpace(string(findOut)))
+	}
+
+	lines := strings.Split(string(findOut), "\n")
+	var vmPaths []string
+	for _, l := range lines {
+		l = strings.TrimSpace(l)
+		if l != "" {
+			vmPaths = append(vmPaths, l)
+		}
+	}
+
+	result := &common.VMwareDiscoverResult{
+		Host: params.Host,
+		VMs:  []common.VMwareVM{},
+	}
+
+	if len(vmPaths) == 0 {
+		return result, nil
+	}
+
+	// 2. Query info for discovered VMs in batches of 50
+	const batchSize = 50
+	for i := 0; i < len(vmPaths); i += batchSize {
+		end := i + batchSize
+		if end > len(vmPaths) {
+			end = len(vmPaths)
+		}
+		batch := vmPaths[i:end]
+
+		infoArgs := append([]string{"vm.info", "-json"}, batch...)
+		infoCmd := exec.CommandContext(timeoutCtx, govcPath, infoArgs...)
+		infoCmd.Env = env
+		infoOut, infoErr := infoCmd.CombinedOutput()
+		if infoErr != nil {
+			return nil, fmt.Errorf("govc vm.info failed (%v): %s", infoErr, strings.TrimSpace(string(infoOut)))
+		}
+
+		var data struct {
+			VirtualMachines []struct {
+				Runtime struct {
+					PowerState string `json:"PowerState"`
+				} `json:"Runtime"`
+				Config struct {
+					Name string `json:"Name"`
+				} `json:"Config"`
+				Summary struct {
+					Runtime struct {
+						PowerState string `json:"PowerState"`
+					} `json:"Runtime"`
+					Config struct {
+						Name string `json:"Name"`
+					} `json:"Config"`
+				} `json:"Summary"`
+				Self struct {
+					Value string `json:"Value"`
+				} `json:"Self"`
+			} `json:"VirtualMachines"`
+		}
+
+		if err := json.Unmarshal(infoOut, &data); err != nil {
+			continue
+		}
+
+		for _, vm := range data.VirtualMachines {
+			name := vm.Config.Name
+			if name == "" {
+				name = vm.Summary.Config.Name
+			}
+			powerState := vm.Runtime.PowerState
+			if powerState == "" {
+				powerState = vm.Summary.Runtime.PowerState
+			}
+			moref := vm.Self.Value
+
+			if name != "" {
+				result.VMs = append(result.VMs, common.VMwareVM{
+					Moref:      moref,
+					Name:       name,
+					PowerState: powerState,
+				})
+			}
+		}
+	}
+
+	return result, nil
 }

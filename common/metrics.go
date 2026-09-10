@@ -366,3 +366,61 @@ type TracerouteResult struct {
 	Hops      []TracerouteHop `json:"hops"`
 	RawOutput string          `json:"raw_output,omitempty"`
 }
+
+// VMwareDiscoverParams defines the input parameters for a VMware ESXi VM discovery job.
+type VMwareDiscoverParams struct {
+	Host     string `json:"host"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Timeout  int    `json:"timeout"` // Default 30, Max 300 (seconds)
+}
+
+// Validate checks if the VMware discovery parameters are safe and valid.
+func (v *VMwareDiscoverParams) Validate() error {
+	v.Host = strings.TrimSpace(v.Host)
+	if v.Host == "" {
+		return errors.New("host cannot be empty")
+	}
+
+	host, _, err := net.SplitHostPort(v.Host)
+	if err != nil {
+		host = v.Host
+	}
+
+	if net.ParseIP(host) == nil {
+		if !hostnameRegex.MatchString(host) {
+			return errors.New("invalid or unsafe host address")
+		}
+	}
+
+	v.Username = strings.TrimSpace(v.Username)
+	if v.Username == "" {
+		return errors.New("username cannot be empty")
+	}
+
+	if v.Password == "" {
+		return errors.New("password cannot be empty")
+	}
+
+	if v.Timeout <= 0 {
+		v.Timeout = 30
+	} else if v.Timeout > 300 {
+		return errors.New("timeout exceeds maximum allowed value (300 seconds)")
+	}
+
+	return nil
+}
+
+// VMwareVM represents a single discovered virtual machine.
+type VMwareVM struct {
+	Moref      string `json:"moref"`
+	Name       string `json:"name"`
+	PowerState string `json:"power_state"`
+}
+
+// VMwareDiscoverResult represents the structured results of a VMware ESXi VM discovery job.
+type VMwareDiscoverResult struct {
+	Host      string     `json:"host"`
+	VMs       []VMwareVM `json:"vms"`
+	RawOutput string     `json:"raw_output,omitempty"`
+}
