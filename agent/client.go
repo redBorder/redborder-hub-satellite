@@ -1195,6 +1195,7 @@ func runVMwareDiscoverCommand(ctx context.Context, params common.VMwareDiscoverP
 				} `json:"Runtime"`
 				Config struct {
 					Name string `json:"Name"`
+					Uuid string `json:"Uuid"`
 				} `json:"Config"`
 				Summary struct {
 					Runtime struct {
@@ -1202,6 +1203,7 @@ func runVMwareDiscoverCommand(ctx context.Context, params common.VMwareDiscoverP
 					} `json:"Runtime"`
 					Config struct {
 						Name string `json:"Name"`
+						Uuid string `json:"Uuid"`
 					} `json:"Config"`
 				} `json:"Summary"`
 				Self struct {
@@ -1224,11 +1226,16 @@ func runVMwareDiscoverCommand(ctx context.Context, params common.VMwareDiscoverP
 				powerState = vm.Summary.Runtime.PowerState
 			}
 			moref := vm.Self.Value
+			uuid := vm.Config.Uuid
+			if uuid == "" {
+				uuid = vm.Summary.Config.Uuid
+			}
 
 			if name != "" {
 				result.VMs = append(result.VMs, common.VMwareVM{
 					Moref:      moref,
 					Name:       name,
+					UUID:       uuid,
 					PowerState: powerState,
 				})
 			}
