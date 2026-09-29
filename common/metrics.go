@@ -415,6 +415,7 @@ func (v *VMwareDiscoverParams) Validate() error {
 type VMwareVM struct {
 	Moref      string `json:"moref"`
 	Name       string `json:"name"`
+	UUID       string `json:"uuid"`
 	PowerState string `json:"power_state"`
 }
 
