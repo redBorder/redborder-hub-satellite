@@ -425,3 +425,84 @@ type VMwareDiscoverResult struct {
 	VMs       []VMwareVM `json:"vms"`
 	RawOutput string     `json:"raw_output,omitempty"`
 }
+
+var vmwareUUIDRegex = regexp.MustCompile(`^[0-9a-fA-F-]{8,64}$`)
+
+// VMwareHardwareParams defines the input parameters for a VMware ESXi VM hardware query.
+// The VM is looked up by VMName, or by its BIOS UUID (which survives renames) when UUID is set.
+type VMwareHardwareParams struct {
+	VMwareDiscoverParams
+	VMName string `json:"vm_name"`
+	UUID   string `json:"uuid"`
+}
+
+// Validate checks the connection parameters and that the VM selector is safe.
+func (v *VMwareHardwareParams) Validate() error {
+	if err := v.VMwareDiscoverParams.Validate(); err != nil {
+		return err
+	}
+
+	v.VMName = strings.TrimSpace(v.VMName)
+	v.UUID = strings.TrimSpace(v.UUID)
+	if v.VMName == "" && v.UUID == "" {
+		return errors.New("either vm_name or uuid must be provided")
+	}
+	// Names are passed as govc arguments, so they must never be parsed as flags
+	if strings.HasPrefix(v.VMName, "-") {
+		return errors.New("invalid vm_name")
+	}
+	if v.UUID != "" && !vmwareUUIDRegex.MatchString(v.UUID) {
+		return errors.New("invalid uuid")
+	}
+	return nil
+}
+
+// VMwareDisk is a virtual disk of a VM.
+type VMwareDisk struct {
+	Name        string `json:"name"`
+	RawName     string `json:"raw_name"`
+	Label       string `json:"label"`
+	SizeMB      int64  `json:"size_mb"`
+	BackingFile string `json:"backing_file,omitempty"`
+	Datastore   string `json:"datastore,omitempty"`
+	VMDKBase    string `json:"vmdk_basename,omitempty"`
+}
+
+// VMwareIPAddress is an IP address reported by VMware Tools for a NIC.
+type VMwareIPAddress struct {
+	Address      string `json:"address"`
+	PrefixLength *int   `json:"prefix_length"`
+}
+
+// VMwareInterface is a virtual network adapter of a VM.
+type VMwareInterface struct {
+	Name        string            `json:"name"`
+	RawName     string            `json:"raw_name"`
+	Label       string            `json:"label"`
+	MACAddress  string            `json:"mac_address"`
+	Connected   bool              `json:"connected"`
+	NetworkName string            `json:"network_name,omitempty"`
+	GuestIfName string            `json:"guest_if_name,omitempty"`
+	IPAddresses []VMwareIPAddress `json:"ip_addresses"`
+}
+
+// VMwareHardware is the hardware inventory of a single VM.
+type VMwareHardware struct {
+	Name       string            `json:"name"`
+	PowerState string            `json:"power_state"`
+	UUID       string            `json:"uuid"`
+	GuestOS    string            `json:"guest_os"`
+	IPAddress  string            `json:"ip_address"`
+	VCPUs      int64             `json:"vcpus"`
+	MemoryMB   int64             `json:"memory_mb"`
+	Disks      []VMwareDisk      `json:"disks"`
+	Interfaces []VMwareInterface `json:"interfaces"`
+}
+
+// VMwareHardwareResult is the result of a VMware ESXi VM hardware query.
+// Hardware is nil when no matching VM exists.
+type VMwareHardwareResult struct {
+	Host     string          `json:"host"`
+	Found    bool            `json:"found"`
+	Hardware *VMwareHardware `json:"hardware"`
+}

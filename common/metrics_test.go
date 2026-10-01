@@ -394,3 +394,26 @@ func TestVMwareDiscoverParamsValidate(t *testing.T) {
 		})
 	}
 }
+
+func TestVMwareHardwareParamsValidate(t *testing.T) {
+	base := VMwareDiscoverParams{Host: "192.168.1.50", Username: "root", Password: "pw"}
+	tests := []struct {
+		name    string
+		params  VMwareHardwareParams
+		wantErr bool
+	}{
+		{"by name", VMwareHardwareParams{VMwareDiscoverParams: base, VMName: "web01"}, false},
+		{"by uuid", VMwareHardwareParams{VMwareDiscoverParams: base, UUID: "422f1c2e-1111-2222-3333-444455556666"}, false},
+		{"no selector", VMwareHardwareParams{VMwareDiscoverParams: base}, true},
+		{"flag-like name", VMwareHardwareParams{VMwareDiscoverParams: base, VMName: "-json"}, true},
+		{"bad uuid", VMwareHardwareParams{VMwareDiscoverParams: base, UUID: "x; rm -rf /"}, true},
+		{"bad host", VMwareHardwareParams{VMwareDiscoverParams: VMwareDiscoverParams{Host: "a b", Username: "u", Password: "p"}, VMName: "x"}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := tt.params.Validate(); (err != nil) != tt.wantErr {
+				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
