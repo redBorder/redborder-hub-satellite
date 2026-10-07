@@ -1145,8 +1145,8 @@ func runVMwareDiscoverCommand(ctx context.Context, params common.VMwareDiscoverP
 	timeoutCtx, cancel := context.WithTimeout(ctx, time.Duration(params.Timeout)*time.Second)
 	defer cancel()
 
-	// 1. Discover all VM inventory paths: govc find . -type m
-	findCmd := exec.CommandContext(timeoutCtx, govcPath, "find", ".", "-type", "m")
+	// 1. Discover all VM MoRefs: govc find -i / -type m
+	findCmd := exec.CommandContext(timeoutCtx, govcPath, "find", "-i", "/", "-type", "m")
 	findCmd.Env = env
 	findOut, findErr := findCmd.CombinedOutput()
 	if findErr != nil {
@@ -1157,7 +1157,7 @@ func runVMwareDiscoverCommand(ctx context.Context, params common.VMwareDiscoverP
 	var vmPaths []string
 	for _, l := range lines {
 		l = strings.TrimSpace(l)
-		if l != "" {
+		if l != "" && l != "/" {
 			vmPaths = append(vmPaths, l)
 		}
 	}
