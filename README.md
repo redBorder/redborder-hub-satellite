@@ -231,6 +231,27 @@ make all
      }' http://localhost:8080/dispatch
      ```
 
+   * **Network Device Interactive SSH Shell Command** (used by redborder-webui to back up devices behind a proxy):
+     Opens a pty-backed shell (for switch CLIs that reject the SSH `exec` request), types `commands` in order and answers each prompt matching a `prompt_responses` pattern (Go RE2 syntax, first match wins). The session ends once the device has been quiet for `idle_timeout` seconds, after `max_session` seconds, or when the device closes it. The raw transcript is returned gzipped and base64-encoded (`transcript`, `transcript_encoding: "gzip+base64"`); parsing it is left to the caller.
+     ```bash
+     curl -s -X POST -H "Content-Type: application/json" -d '{
+       "agent_id": "remote-edge-satellite-01",
+       "method": "device_ssh_shell",
+       "params": {
+         "host": "192.168.1.10",
+         "port": 22,
+         "username": "admin",
+         "password": "secretpassword",
+         "commands": ["terminal length 0", "show running-config"],
+         "prompt_responses": [
+           { "pattern": "(?i)-{2,3}\\s*\\(?more\\)?\\s*-{2,3}", "response": " " }
+         ],
+         "idle_timeout": 20,
+         "max_session": 180
+       }
+     }' http://localhost:8080/dispatch
+     ```
+
 ---
 
 ## Testing & Packaging
