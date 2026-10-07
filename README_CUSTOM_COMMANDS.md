@@ -61,6 +61,7 @@ To enable custom commands, add a `"commands"` dictionary to `/etc/redborder-sate
 | `max_bytes` | integer| Maximum bytes to read from file or keep from stdout/stderr (default: 512 KB). |
 | `timeout_seconds`| integer| Maximum execution duration before SIGKILL (default: 60s). |
 | `env` | array | Extra environment variables passed to the process (e.g. `["FOO=bar"]`). |
+| `stdin_param` | string | Name of a parameter written to the process's stdin instead of being referenced in `args`, for payloads too large for a single argument (128 KB on Linux). Still validated by its `param_rules` entry. |
 
 ### Parameter Validation Rules (`param_rules`)
 
