@@ -387,6 +387,8 @@ func (a *Agent) handleRequest(message []byte, session *agentSession) {
 		result, runErr = executeTraceroute(a.ctx, req.Params)
 	case "vmware_discover_vms", "vmware_list_vms", "discover_vmware_vms":
 		result, runErr = executeVMwareDiscover(a.ctx, req.Params)
+	case "device_ssh_shell":
+		result, runErr = executeDeviceShell(a.ctx, req.Params)
 	default:
 		a.mu.Lock()
 		cmdCfg, exists := a.customCommands[req.Method]
