@@ -1057,6 +1057,11 @@ func executeCustomBinary(ctx context.Context, methodName string, cmdCfg CustomCo
 	defer cancel()
 
 	cmd := exec.CommandContext(execCtx, cmdCfg.Executable, finalArgs...)
+	if cmdCfg.StdinParam != "" {
+		if val, exists := params[cmdCfg.StdinParam]; exists && val != nil {
+			cmd.Stdin = strings.NewReader(fmt.Sprintf("%v", val))
+		}
+	}
 	if len(cmdCfg.Env) > 0 {
 		cmd.Env = append(os.Environ(), cmdCfg.Env...)
 	}
