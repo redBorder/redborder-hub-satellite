@@ -231,6 +231,21 @@ make all
      }' http://localhost:8080/dispatch
      ```
 
+   * **VMware ESXi VM Hardware Command** (`vmware_get_vm_hardware`): returns vCPUs, memory, disks, NICs and guest IPs of one VM. Select it with `vm_name` or with `uuid` (survives renames). `result.found` is `false` and `result.hardware` is `null` when no VM matches.
+     ```bash
+     curl -s -X POST -H "Content-Type: application/json" -d '{
+       "agent_id": "remote-edge-satellite-01",
+       "method": "vmware_get_vm_hardware",
+       "params": {
+         "host": "192.168.1.50",
+         "username": "root",
+         "password": "secretpassword",
+         "vm_name": "web01",
+         "timeout": 60
+       }
+     }' http://localhost:8080/dispatch
+     ```
+
 ---
 
 ## Testing & Packaging
