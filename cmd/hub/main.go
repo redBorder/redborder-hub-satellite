@@ -106,9 +106,10 @@ func main() {
 		}
 
 		var req struct {
-			AgentID string          `json:"agent_id"`
-			Method  string          `json:"method"`
-			Params  json.RawMessage `json:"params"`
+			AgentID        string          `json:"agent_id"`
+			Method         string          `json:"method"`
+			Params         json.RawMessage `json:"params"`
+			TimeoutSeconds int             `json:"timeout_seconds"`
 		}
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -121,8 +122,9 @@ func main() {
 			return
 		}
 
-		// Allow slightly longer timeout for executions (15 seconds)
-		ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+		// 15 seconds unless the caller asks for longer (timeout_seconds, capped), e.g.
+		// for an interactive device session that only ends once the device goes quiet.
+		ctx, cancel := context.WithTimeout(r.Context(), hub.DispatchTimeout(req.TimeoutSeconds))
 		defer cancel()
 
 		isProxy := r.Header.Get("X-Cluster-Proxy") == "true"

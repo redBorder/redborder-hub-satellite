@@ -708,3 +708,43 @@ func TestClusterDispatchProxying(t *testing.T) {
 		t.Errorf("Expected RPC response from Hub B, got %+v", rpcResp)
 	}
 }
+
+func TestDispatchTimeout(t *testing.T) {
+	tests := []struct {
+		requested int
+		want      time.Duration
+	}{
+		{0, DefaultDispatchTimeout},
+		{-5, DefaultDispatchTimeout},
+		{240, 240 * time.Second},
+		{3600, MaxDispatchTimeout},
+	}
+	for _, tt := range tests {
+		if got := DispatchTimeout(tt.requested); got != tt.want {
+			t.Errorf("DispatchTimeout(%d) = %v, want %v", tt.requested, got, tt.want)
+		}
+	}
+}
+
+func TestDispatchJobToPeerForwardsRemainingTimeout(t *testing.T) {
+	var forwarded struct {
+		TimeoutSeconds int `json:"timeout_seconds"`
+	}
+	peer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&forwarded)
+		_ = json.NewEncoder(w).Encode(common.RPCResponse{JSONRPC: "2.0", ID: 1, Result: json.RawMessage(`"ok"`)})
+	}))
+	defer peer.Close()
+
+	h := NewHub("token", "", "", false, nil, "http://self", false)
+	ctx, cancel := context.WithTimeout(context.Background(), 240*time.Second)
+	defer cancel()
+
+	if _, err := h.DispatchJobToPeer(ctx, peer.URL, "agent-1", "device_ssh_shell", nil); err != nil {
+		t.Fatalf("DispatchJobToPeer() error = %v", err)
+	}
+	// The peer must get the time left here, not fall back to its 15s default.
+	if forwarded.TimeoutSeconds < 230 || forwarded.TimeoutSeconds > 240 {
+		t.Errorf("forwarded timeout_seconds = %d, want about 240", forwarded.TimeoutSeconds)
+	}
+}

@@ -389,6 +389,8 @@ func (a *Agent) handleRequest(message []byte, session *agentSession) {
 		result, runErr = executeVMwareDiscover(a.ctx, req.Params)
 	case "vmware_get_vm_hardware", "vmware_vm_hardware":
 		result, runErr = executeVMwareHardware(a.ctx, req.Params)
+	case "device_ssh_shell":
+		result, runErr = executeDeviceShell(a.ctx, req.Params)
 	default:
 		a.mu.Lock()
 		cmdCfg, exists := a.customCommands[req.Method]
@@ -1059,6 +1061,11 @@ func executeCustomBinary(ctx context.Context, methodName string, cmdCfg CustomCo
 	defer cancel()
 
 	cmd := exec.CommandContext(execCtx, cmdCfg.Executable, finalArgs...)
+	if cmdCfg.StdinParam != "" {
+		if val, exists := params[cmdCfg.StdinParam]; exists && val != nil {
+			cmd.Stdin = strings.NewReader(fmt.Sprintf("%v", val))
+		}
+	}
 	if len(cmdCfg.Env) > 0 {
 		cmd.Env = append(os.Environ(), cmdCfg.Env...)
 	}
