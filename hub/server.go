@@ -36,7 +36,25 @@ const (
 
 	// Maximum message size allowed from peer.
 	maxMessageSize = 512 * 1024 // 512 KB
+
+	// How long a /dispatch waits for the agent's response by default, and the most a
+	// caller may ask for with timeout_seconds (e.g. an interactive device session).
+	DefaultDispatchTimeout = 15 * time.Second
+	MaxDispatchTimeout     = 600 * time.Second
 )
+
+// DispatchTimeout returns how long a /dispatch should wait for the agent's response,
+// given the timeout_seconds the caller asked for (0 or less: the default).
+func DispatchTimeout(requestedSeconds int) time.Duration {
+	if requestedSeconds <= 0 {
+		return DefaultDispatchTimeout
+	}
+	timeout := time.Duration(requestedSeconds) * time.Second
+	if timeout > MaxDispatchTimeout {
+		return MaxDispatchTimeout
+	}
+	return timeout
+}
 
 var (
 	upgrader = websocket.Upgrader{
@@ -767,13 +785,20 @@ func (h *Hub) SavePeerPublicKey(agentID string, pubKeyB64 string) error {
 // DispatchJobToPeer forwards a job dispatch request to a peer Hub in the cluster.
 func (h *Hub) DispatchJobToPeer(ctx context.Context, peerURL string, agentID string, method string, params interface{}) (*common.RPCResponse, error) {
 	var reqBody struct {
-		AgentID string      `json:"agent_id"`
-		Method  string      `json:"method"`
-		Params  interface{} `json:"params"`
+		AgentID        string      `json:"agent_id"`
+		Method         string      `json:"method"`
+		Params         interface{} `json:"params"`
+		TimeoutSeconds int         `json:"timeout_seconds,omitempty"`
 	}
 	reqBody.AgentID = agentID
 	reqBody.Method = method
 	reqBody.Params = params
+	// The peer applies its own dispatch timeout; hand it whatever time is left here.
+	if deadline, ok := ctx.Deadline(); ok {
+		if remaining := int(time.Until(deadline).Seconds()); remaining > 0 {
+			reqBody.TimeoutSeconds = remaining
+		}
+	}
 
 	data, err := json.Marshal(reqBody)
 	if err != nil {
