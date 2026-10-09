@@ -387,6 +387,8 @@ func (a *Agent) handleRequest(message []byte, session *agentSession) {
 		result, runErr = executeTraceroute(a.ctx, req.Params)
 	case "vmware_discover_vms", "vmware_list_vms", "discover_vmware_vms":
 		result, runErr = executeVMwareDiscover(a.ctx, req.Params)
+	case "vmware_get_vm_hardware", "vmware_vm_hardware":
+		result, runErr = executeVMwareHardware(a.ctx, req.Params)
 	case "device_ssh_shell":
 		result, runErr = executeDeviceShell(a.ctx, req.Params)
 	default:
@@ -810,6 +812,8 @@ func (a *Agent) runScheduledTask(t common.ScheduledTask) {
 		result, err = executeTraceroute(a.ctx, t.Params)
 	case "vmware_discover_vms", "vmware_list_vms", "discover_vmware_vms":
 		result, err = executeVMwareDiscover(a.ctx, t.Params)
+	case "vmware_get_vm_hardware", "vmware_vm_hardware":
+		result, err = executeVMwareHardware(a.ctx, t.Params)
 	default:
 		a.mu.Lock()
 		cmdCfg, exists := a.customCommands[t.Method]
