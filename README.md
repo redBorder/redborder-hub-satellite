@@ -139,6 +139,7 @@ make all
    * Runs on port `:8080` (use `-addr :PORT` flag to customize).
    * Satellite WebSocket endpoint: `ws://localhost:8080/ws`
    * REST control APIs listen on: `/agents` (list connected satellites) and `/dispatch` (send job).
+   * `/dispatch` waits up to 15 seconds for the satellite's response. Jobs that take longer (e.g. `device_ssh_shell`) can pass `"timeout_seconds"` in the request body, up to 600; it is also passed on when the dispatch is forwarded to a peer Hub.
 
 2. **Configure and Run the Satellite**:
    Create a JSON configuration file (e.g., `satellite.json`):
