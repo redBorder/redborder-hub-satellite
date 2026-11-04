@@ -35,3 +35,6 @@ authorized_keys/
 # OS-specific files
 .DS_Store
 Thumbs.db
+
+# SBOM
+redborder-hub-satellite-sbom.spdx.json
