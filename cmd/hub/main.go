@@ -89,6 +89,10 @@ func main() {
 		log.Fatalf("Refusing to start: %v. Set auth_token in the config file, REDBORDER_AUTH_TOKEN or -token.", err)
 	}
 
+	if finalRegToken == "" {
+		log.Printf("WARNING: registration_token is not set; falling back to auth_token to enrol new satellite keys. This fallback is deprecated: set a separate registration_token.")
+	}
+
 	h := hub.NewHub(finalToken, finalRegToken, finalKeysDir, finalDebug, finalPeers, finalMyURL, finalAdvertisePeers)
 
 	// HTTP routes
