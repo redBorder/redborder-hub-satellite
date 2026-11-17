@@ -121,7 +121,7 @@ make all
      ```json
      {
        "addr": ":8080",
-       "auth_token": "my-secret-token"
+       "auth_token": "<auth-token>"
      }
      ```
      Run the hub pointing to the config:
@@ -130,12 +130,13 @@ make all
      ```
    * **Via Environment Variable** (Recommended):
      ```bash
-     REDBORDER_AUTH_TOKEN="my-secret-token" ./bin/redborder-hub
+     REDBORDER_AUTH_TOKEN="<auth-token>" ./bin/redborder-hub
      ```
    * **Via CLI flag**:
      ```bash
-     ./bin/redborder-hub -token "my-secret-token"
+     ./bin/redborder-hub -token "<auth-token>"
      ```
+   * The hub refuses to start without a unique token (empty values and well-known examples such as `CHANGE_ME` are rejected). Generate one per cluster with `openssl rand -hex 32`; every hub of a cluster must use the same value, and satellites need it only for their first registration.
    * Runs on port `:8080` (use `-addr :PORT` flag to customize).
    * Satellite WebSocket endpoint: `ws://localhost:8080/ws`
    * REST control APIs listen on: `/agents` (list connected satellites) and `/dispatch` (send job).
@@ -145,7 +146,7 @@ make all
    ```json
    {
      "hub_url": "ws://localhost:8080/ws",
-     "auth_token": "super-secret-agent-token",
+     "auth_token": "<registration-token>",
      "agent_id": "remote-edge-satellite-01"
    }
    ```
@@ -500,7 +501,7 @@ Alternatively, define the clustering properties in the configuration JSON file:
 ```json
 {
   "addr": ":8080",
-  "auth_token": "super-secret-agent-token",
+  "auth_token": "<auth-token>",
   "my_url": "http://10.0.0.1:8080",
   "peers": [
     "http://10.0.0.2:8080",
