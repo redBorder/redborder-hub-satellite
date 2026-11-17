@@ -137,6 +137,7 @@ make all
      ./bin/redborder-hub -token "<auth-token>"
      ```
    * The hub refuses to start without a unique token (empty values and well-known examples such as `CHANGE_ME` are rejected). Generate one per cluster with `openssl rand -hex 32`; every hub of a cluster must use the same value, and satellites need it only for their first registration.
+   * Prefer a separate `registration_token` (hub config, or `REDBORDER_REG_TOKEN`) for enrolling satellite keys. Without it the hub falls back to `auth_token` and logs a deprecation warning.
    * Runs on port `:8080` (use `-addr :PORT` flag to customize).
    * Satellite WebSocket endpoint: `ws://localhost:8080/ws`
    * REST control APIs listen on: `/agents` (list connected satellites) and `/dispatch` (send job).
