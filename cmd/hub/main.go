@@ -32,7 +32,7 @@ func writeJSONError(w http.ResponseWriter, message string, statusCode int) {
 func main() {
 	// 1. Define command-line flags
 	configPath := flag.String("config", "", "Path to JSON configuration file")
-	tokenFlag := flag.String("token", "super-secret-agent-token", "Secret authentication token (fallback)")
+	tokenFlag := flag.String("token", "", "Secret authentication token shared by the cluster (fallback; required)")
 	regTokenFlag := flag.String("reg-token", "", "Token used for auto-registering new public keys (fallback)")
 	addrFlag := flag.String("addr", ":8080", "TCP address to listen on (fallback)")
 	keysDirFlag := flag.String("keys-dir", "authorized_keys", "Directory containing authorized agent public keys (fallback)")
@@ -83,6 +83,10 @@ func main() {
 				finalPeers = append(finalPeers, strings.TrimSpace(p))
 			}
 		}
+	}
+
+	if err := common.ValidateAuthToken(finalToken); err != nil {
+		log.Fatalf("Refusing to start: %v. Set auth_token in the config file, REDBORDER_AUTH_TOKEN or -token.", err)
 	}
 
 	h := hub.NewHub(finalToken, finalRegToken, finalKeysDir, finalDebug, finalPeers, finalMyURL, finalAdvertisePeers)
