@@ -525,6 +525,9 @@ func executeSNMPWalk(ctx context.Context, rawParams json.RawMessage) (interface{
 	if err := params.Validate(); err != nil {
 		return nil, fmt.Errorf("validation failed: %w", err)
 	}
+	if len(params.OIDs) > 0 {
+		return nil, errors.New("validation failed: oids is only supported by snmpget, use oid for snmpwalk")
+	}
 
 	result, err := runSNMPWalkCommand(ctx, params)
 	if err != nil {

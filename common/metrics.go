@@ -2,6 +2,7 @@ package common
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"regexp"
 	"strconv"
@@ -80,8 +81,9 @@ type SNMPParams struct {
 	Version        string `json:"version"`         // "1", "2c" (default), or "3"
 	Target         string `json:"target"`          // Target IP / hostname
 	Community      string `json:"community"`       // Default "public" (for v1/v2c)
-	OID            string `json:"oid"`             // Default ".1.3.6"
-	Timeout        int    `json:"timeout"`         // Default 5, Max 15 (seconds)
+	OID            string   `json:"oid"`             // Default ".1.3.6"
+	OIDs           []string `json:"oids,omitempty"`  // snmpget only: several OIDs in one request (max MaxSNMPGetOIDs), takes precedence over OID
+	Timeout        int      `json:"timeout"`         // Default 5, Max 15 (seconds)
 
 	// SNMP v3 parameters
 	SecLevel       string `json:"sec_level"`       // "noAuthNoPriv", "authNoPriv", "authPriv"
@@ -93,6 +95,9 @@ type SNMPParams struct {
 	ContextName    string `json:"context_name"`    // Context Name (-n)
 	EngineID       string `json:"engine_id"`       // Engine ID (-e)
 }
+
+// MaxSNMPGetOIDs caps the number of OIDs accepted in SNMPParams.OIDs.
+const MaxSNMPGetOIDs = 32
 
 // SNMPWalkParams defines the input parameters for an SNMPWalk job.
 type SNMPWalkParams = SNMPParams
@@ -240,6 +245,17 @@ func (s *SNMPParams) Validate() error {
 		return errors.New("invalid OID format")
 	}
 
+	if len(s.OIDs) > MaxSNMPGetOIDs {
+		return fmt.Errorf("too many OIDs (maximum %d)", MaxSNMPGetOIDs)
+	}
+	for i, oid := range s.OIDs {
+		oid = strings.TrimSpace(oid)
+		if !oidRegex.MatchString(oid) {
+			return errors.New("invalid OID format in oids")
+		}
+		s.OIDs[i] = oid
+	}
+
 	if s.Timeout <= 0 {
 		s.Timeout = 5
 	} else if s.Timeout > 15 {
@@ -291,8 +307,11 @@ func (s *SNMPParams) BuildCLIArgs() []string {
 		args = append(args, "-v", ver, "-c", comm)
 	}
 
-	args = append(args, "-t", strconv.Itoa(s.Timeout), s.Target, s.OID)
-	return args
+	args = append(args, "-t", strconv.Itoa(s.Timeout), s.Target)
+	if len(s.OIDs) > 0 {
+		return append(args, s.OIDs...)
+	}
+	return append(args, s.OID)
 }
 
 // SNMPWalkEntry represents a single OID-Value pair returned by SNMPWalk or SNMPGet.
