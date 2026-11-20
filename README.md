@@ -185,6 +185,20 @@ make all
       }' http://localhost:8080/dispatch
       ```
 
+    * **SNMPGet with several OIDs in one request** (`oids`, snmpget only, up to 32; takes precedence over `oid`):
+      ```bash
+      curl -s -X POST -H "Content-Type: application/json" -d '{
+        "agent_id": "remote-edge-satellite-01",
+        "method": "snmpget",
+        "params": {
+          "target": "127.0.0.1:161",
+          "community": "public",
+          "oids": ["1.3.6.1.2.1.31.1.1.1.6.1", "1.3.6.1.2.1.31.1.1.1.10.1"],
+          "timeout": 3
+        }
+      }' http://localhost:8080/dispatch
+      ```
+
     * **SNMP v3 Command (authPriv)**:
       ```bash
       curl -s -X POST -H "Content-Type: application/json" -d '{
