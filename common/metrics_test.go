@@ -248,6 +248,9 @@ func TestSNMPParamsMultipleOIDs(t *testing.T) {
 			t.Errorf("default oid must not be added when oids is set: %v", args)
 		}
 	}
+	if got := p.RequestedOID(); got != "1.3.6.1.2.1.31.1.1.1.6.3,.1.3.6.1.2.1.31.1.1.1.10.3" {
+		t.Errorf("RequestedOID() = %q", got)
+	}
 }
 
 func TestSNMPParamsOIDsRejectsUnsafeAndTooMany(t *testing.T) {
