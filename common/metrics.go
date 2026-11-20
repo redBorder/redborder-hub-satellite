@@ -266,6 +266,15 @@ func (s *SNMPParams) Validate() error {
 }
 
 // BuildCLIArgs builds the command line argument slice for net-snmp commands (snmpwalk / snmpget).
+// RequestedOID is the OID reported in the job result: the oids list (comma
+// separated) when given, the single oid otherwise.
+func (s *SNMPParams) RequestedOID() string {
+	if len(s.OIDs) > 0 {
+		return strings.Join(s.OIDs, ",")
+	}
+	return s.OID
+}
+
 func (s *SNMPParams) BuildCLIArgs() []string {
 	var args []string
 	if s.Version == "3" {

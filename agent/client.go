@@ -586,7 +586,7 @@ func runSNMPGetCommand(ctx context.Context, params common.SNMPGetParams) (*commo
 		return nil, fmt.Errorf("snmpget failed (exit status %v, output: %q)", err, string(out))
 	}
 
-	return parseSNMPWalkOutput(params.Target, params.OID, string(out))
+	return parseSNMPWalkOutput(params.Target, params.RequestedOID(), string(out))
 }
 
 func parseSNMPWalkOutput(target string, reqOID string, output string) (*common.SNMPWalkResult, error) {
