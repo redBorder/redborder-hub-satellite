@@ -226,6 +226,52 @@ func TestSNMPParamsBuildCLIArgs(t *testing.T) {
 	}
 }
 
+func TestSNMPParamsMultipleOIDs(t *testing.T) {
+	p := SNMPParams{
+		Target: "10.0.0.5",
+		OIDs:   []string{" 1.3.6.1.2.1.31.1.1.1.6.3 ", ".1.3.6.1.2.1.31.1.1.1.10.3"},
+	}
+	if err := p.Validate(); err != nil {
+		t.Fatalf("unexpected validation error: %v", err)
+	}
+
+	args := p.BuildCLIArgs()
+	tail := args[len(args)-3:]
+	want := []string{"10.0.0.5", "1.3.6.1.2.1.31.1.1.1.6.3", ".1.3.6.1.2.1.31.1.1.1.10.3"}
+	for i := range want {
+		if tail[i] != want[i] {
+			t.Errorf("arg tail[%d] = %q, want %q (args: %v)", i, tail[i], want[i], args)
+		}
+	}
+	for _, a := range args {
+		if a == ".1.3.6" {
+			t.Errorf("default oid must not be added when oids is set: %v", args)
+		}
+	}
+	if got := p.RequestedOID(); got != "1.3.6.1.2.1.31.1.1.1.6.3,.1.3.6.1.2.1.31.1.1.1.10.3" {
+		t.Errorf("RequestedOID() = %q", got)
+	}
+}
+
+func TestSNMPParamsOIDsRejectsUnsafeAndTooMany(t *testing.T) {
+	bad := []string{"1.3.6.1; rm -rf /", "-On", "", "1.3.6.1 1.3.6.2", "$(id)"}
+	for _, oid := range bad {
+		p := SNMPParams{Target: "10.0.0.5", OIDs: []string{"1.3.6.1", oid}}
+		if err := p.Validate(); err == nil {
+			t.Errorf("expected error for oid %q", oid)
+		}
+	}
+
+	many := make([]string, MaxSNMPGetOIDs+1)
+	for i := range many {
+		many[i] = "1.3.6.1.2.1.1.1.0"
+	}
+	p := SNMPParams{Target: "10.0.0.5", OIDs: many}
+	if err := p.Validate(); err == nil {
+		t.Errorf("expected error for %d oids", len(many))
+	}
+}
+
 func TestTracerouteParamsValidate(t *testing.T) {
 	tests := []struct {
 		name    string
