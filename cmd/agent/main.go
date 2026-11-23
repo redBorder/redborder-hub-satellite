@@ -17,7 +17,7 @@ func main() {
 	// 1. Define command-line flags
 	configPath := flag.String("config", "", "Path to JSON configuration file")
 	hubURL := flag.String("hub", "ws://localhost:8080/ws", "WebSocket Hub connection URL (fallback)")
-	token := flag.String("token", "super-secret-agent-token", "Agent authentication token (fallback)")
+	token := flag.String("token", "", "Agent registration token, required until the agent key is enrolled (fallback)")
 	agentID := flag.String("id", "satellite-site-a", "Unique identifier for this Spoke Satellite (fallback)")
 	privateKeyPath := flag.String("key", "redborder-satellite.key", "Path to Agent private key file (fallback)")
 	insecureFlag := flag.Bool("insecure", false, "Bypass TLS certificate verification for self-signed certificates (fallback)")
@@ -49,6 +49,20 @@ func main() {
 		finalAgentID = *agentID
 		finalPrivateKeyPath = *privateKeyPath
 		finalInsecure = *insecureFlag
+	}
+
+	// The token is only needed to enrol a new key (or when no key is used);
+	// an already enrolled agent authenticates with its signature.
+	keyEnrolled := false
+	if finalPrivateKeyPath != "" {
+		if _, err := os.Stat(finalPrivateKeyPath); err == nil {
+			keyEnrolled = true
+		}
+	}
+	if !keyEnrolled {
+		if err := common.ValidateAuthToken(finalToken); err != nil {
+			log.Fatalf("Cannot start: %v. Set auth_token in the config file or -token to the registration token of your hub cluster.", err)
+		}
 	}
 
 	var finalKey ed25519.PrivateKey

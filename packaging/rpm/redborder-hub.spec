@@ -48,6 +48,20 @@ getent passwd %{name} >/dev/null || \
 exit 0
 
 %post
+# Generate a unique auth token when the config still holds a placeholder or
+# the legacy well-known default. A real token is never touched.
+HUB_CONF=%{_sysconfdir}/%{name}/hub.json
+if [ -f "$HUB_CONF" ] && grep -Eq '"auth_token"[[:space:]]*:[[:space:]]*"(CHANGE_ME|super-secret-agent-token)"' "$HUB_CONF"; then
+    HUB_TOKEN=$(head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')
+    if [ ${#HUB_TOKEN} -eq 64 ]; then
+        sed -i -E "s/(\"auth_token\"[[:space:]]*:[[:space:]]*\")(CHANGE_ME|super-secret-agent-token)(\")/\1${HUB_TOKEN}\3/" "$HUB_CONF"
+        echo "redborder-hub: generated a unique auth_token in $HUB_CONF." >&2
+        echo "redborder-hub: copy it to every other hub of the cluster and use it to register satellites." >&2
+    else
+        echo "redborder-hub: could not generate an auth_token; set it manually in $HUB_CONF." >&2
+    fi
+    unset HUB_TOKEN
+fi
 %systemd_post redborder-hub.service
 
 %preun
