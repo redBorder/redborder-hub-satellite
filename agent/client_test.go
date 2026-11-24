@@ -132,6 +132,36 @@ func TestCustomCommandBinaryExecution(t *testing.T) {
 	}
 }
 
+func TestCustomCommandStdinParam(t *testing.T) {
+	cmdCfg := CustomCommandConfig{
+		Executable: "cat",
+		StdinParam: "content",
+		ParamRules: map[string]ParamRule{
+			"content": {
+				Regex:    "^[A-Za-z0-9+/=]+$",
+				Required: true,
+			},
+		},
+		TimeoutSeconds: 5,
+	}
+
+	// Larger than a single argument may be (128 KB), which is why it goes on stdin.
+	content := strings.Repeat("QUJD", 64*1024)
+	rawParams, _ := json.Marshal(map[string]string{"content": content})
+	res, err := executeCustomCommand(context.Background(), "test_cat", cmdCfg, rawParams)
+	if err != nil {
+		t.Fatalf("unexpected error executing custom command: %v", err)
+	}
+	if stdout, _ := res.(map[string]interface{})["stdout"].(string); stdout != content {
+		t.Errorf("expected stdin to be echoed back (%d bytes), got %d bytes", len(content), len(stdout))
+	}
+
+	_, errInvalid := executeCustomCommand(context.Background(), "test_cat", cmdCfg, json.RawMessage(`{"content": "not base64!"}`))
+	if errInvalid == nil {
+		t.Errorf("expected the stdin parameter to be validated, got nil")
+	}
+}
+
 func TestCustomCommandFileRead(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "file_read_test")
 	if err != nil {

@@ -23,6 +23,10 @@ type CustomCommandConfig struct {
 	MaxBytes       int64                `json:"max_bytes,omitempty"`       // Max file read size or output limit
 	TimeoutSeconds int                  `json:"timeout_seconds,omitempty"` // Execution timeout
 	Env            []string             `json:"env,omitempty"`             // Extra environment variables
+	// StdinParam names a parameter written to the process's stdin instead of being
+	// referenced in Args, for payloads too large for a single argument (128 KB on Linux).
+	// It is validated by its ParamRules entry like any other parameter.
+	StdinParam string `json:"stdin_param,omitempty"`
 }
 
 // Config represents the Agent configuration.
